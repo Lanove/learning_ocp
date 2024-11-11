@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic -Wl,--dependency-file,CMakeFiles/mpc_1dof_oop.dir/link.d CMakeFiles/mpc_1dof_oop.dir/mpc_oop.cpp.o -o mpc_1dof_oop  -Wl,-rpath,/usr/local/lib /usr/local/lib/libOsqpEigen.so.0.8.1 /usr/lib/libosqp.so
