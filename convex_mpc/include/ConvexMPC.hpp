@@ -74,6 +74,7 @@ public:
     Eigen::Matrix<double, InputDim, 1> control =
         QPSolution.block(StateDim * (mpc_horizon + 1), 0, InputDim, 1);
 
+
     return control;
   }
 
@@ -113,8 +114,8 @@ public:
                                      InputDim * mpc_horizon);
 
     // Loop over each state dimension and each step in the MPC horizon
-    for (int i = 0; i < mpc_horizon + 1; ++i) {
-      for (int j = 0; j < StateDim; ++j) {
+    for (int i = 0; i < mpc_horizon + 1; i++) {
+      for (int j = 0; j < StateDim; j++) {
         // Position in the gradient vector for the current state in the
         // horizon
         int pos = i * StateDim + j;
@@ -129,10 +130,9 @@ public:
   }
 
   void cast_mpc_to_qp_constraint_matrix() {
-    constraintMatrix.resize(
-        StateDim * (mpc_horizon + 1) + StateDim * (mpc_horizon + 1) +
-            InputDim * mpc_horizon,
-        StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon);
+    constraintMatrix.resize(StateDim * (mpc_horizon + 1) + StateDim * (mpc_horizon + 1) +
+                                InputDim * mpc_horizon,
+                            StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon);
 
     // populate linear constraint matrix
     for (int i = 0; i < StateDim * (mpc_horizon + 1); i++) {
@@ -144,8 +144,7 @@ public:
         for (int k = 0; k < StateDim; k++) {
           float value = A(j, k);
           if (value != 0) {
-            constraintMatrix.insert(StateDim * (i + 1) + j, StateDim * i + k) =
-                value;
+            constraintMatrix.insert(StateDim * (i + 1) + j, StateDim * i + k) = value;
           }
         }
 
@@ -155,13 +154,11 @@ public:
           float value = B(j, k);
           if (value != 0) {
             constraintMatrix.insert(StateDim * (i + 1) + j,
-                                    InputDim * i + k +
-                                        StateDim * (mpc_horizon + 1)) = value;
+                                    InputDim * i + k + StateDim * (mpc_horizon + 1)) = value;
           }
         }
 
-    for (int i = 0; i < StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon;
-         i++) {
+    for (int i = 0; i < StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon; i++) {
       constraintMatrix.insert(i + (mpc_horizon + 1) * StateDim, i) = 1;
     }
   }
@@ -247,8 +244,10 @@ private:
 
   // Update constraint vectors with the new state
   void update_constraint_vectors() {
-    lowerBound(0) = -x0(0);
-    upperBound(0) = -x0(0);
+    for(int i = 0; i < StateDim; i++) {
+      lowerBound(i) = -x0(i);
+      upperBound(i) = -x0(i);
+    }
     solver.updateBounds(lowerBound, upperBound);
   }
 };
