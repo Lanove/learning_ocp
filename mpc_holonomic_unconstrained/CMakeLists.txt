@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set (CMAKE_CXX_STANDARD 11)
 
-project(mpc_1dof)
+project(mpc_holo)
 
 find_package(ConvexMPC)
 find_package(OsqpEigen)
@@ -17,5 +17,5 @@ include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 # add_executable(mpc_1dof mpc.cpp)
 # target_link_libraries(mpc_1dof OsqpEigen::OsqpEigen)
 
-add_executable(mpc_1dof_oop mpc_oop.cpp)
-target_link_libraries(mpc_1dof_oop OsqpEigen::OsqpEigen ConvexMPC)
+add_executable(mpc_holo mpc_holo.cpp)
+target_link_libraries(mpc_holo OsqpEigen::OsqpEigen ConvexMPC)
