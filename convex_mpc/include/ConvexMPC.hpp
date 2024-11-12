@@ -16,13 +16,13 @@ public:
     this->B = B;
   }
 
-  void
-  set_state_penalty_matrix(const Eigen::Matrix<double, StateDim, StateDim> &Q) {
+  void set_state_penalty_matrix(
+      const Eigen::DiagonalMatrix<double, StateDim, StateDim> &Q) {
     this->Q = Q;
   }
 
   void set_control_penalty_matrix(
-      const Eigen::Matrix<double, InputDim, InputDim> &R) {
+      const Eigen::DiagonalMatrix<double, InputDim, InputDim> &R) {
     this->R = R;
   }
 
@@ -104,7 +104,7 @@ public:
                                      InputDim * mpc_horizon);
     for (int i = 0; i < StateDim * (mpc_horizon + 1); i++) {
       int pos = i % StateDim;
-      gradient(i) = -Q(pos, pos) * xRef_const(pos);
+      gradient(i) = -Q.diagonal()[pos] * xRef_const(pos);
     }
   }
 
@@ -122,7 +122,7 @@ public:
         // Each entry is the negative product of Q and the reference at each
         // horizon step
         gradient(pos) =
-            -Q(j, j) *
+            -Q.diagonal()[j] *
             xRef(j, i); // xRef(j, i) corresponds to state j at horizon step i
       }
     }
@@ -224,8 +224,8 @@ private:
   double Ts;
 
   // State and control matrices
-  Eigen::Matrix<double, StateDim, StateDim> Q;
-  Eigen::Matrix<double, InputDim, InputDim> R;
+  Eigen::DiagonalMatrix<double, StateDim, StateDim> Q;
+  Eigen::DiagonalMatrix<double, InputDim, InputDim> R;
 
   // State and control vectors
   Eigen::Matrix<double, StateDim, 1> x0;

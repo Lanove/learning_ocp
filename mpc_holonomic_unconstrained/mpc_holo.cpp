@@ -1,5 +1,5 @@
-#include <iostream>
 #include <ConvexMPC.hpp>
+#include <iostream>
 
 double referenceTrajectory(double t) {
   return -0.17 + 0.85 * t - 0.13 * std::pow(t, 2) + 0.008407 * std::pow(t, 3) -
@@ -13,11 +13,11 @@ int main() {
   const int mpc_horizon = 10;
   const double Ts = 0.1;
   const int simulation_time = 330; // 33
-  const int state_dim = 1;
-  const int input_dim = 1;
+  const int state_dim = 3;
+  const int input_dim = 3;
 
-  Eigen::Matrix<double, state_dim, state_dim> Q;
-  Eigen::Matrix<double, input_dim, input_dim> R;
+  Eigen::DiagonalMatrix<double, state_dim, state_dim> Q;
+  Eigen::DiagonalMatrix<double, input_dim, input_dim> R;
 
   Eigen::Matrix<double, state_dim, 1> _xMax;
   Eigen::Matrix<double, state_dim, 1> _xMin;
@@ -31,21 +31,25 @@ int main() {
   Eigen::MatrixXd xRef;
   xRef.resize(state_dim, mpc_horizon + 1);
 
-  ConvexMPC<1, 1> mpc(mpc_horizon, Ts);
+  ConvexMPC<state_dim, input_dim> mpc(mpc_horizon, Ts);
 
-  A << 0.904837;
-  B << 0.0951626;
-  Q << 10.0;
-  R << 0.001;
-  _xMax << OsqpEigen::INFTY;
-  _xMin << -OsqpEigen::INFTY;
-  _uMax << 10.0;
-  _uMin << -10.0;
-  x0 << 0;
+  // State variables are [x, y, theta, vx, vy, w]
+  // Control inputs are [vx, vy, w]
+  A << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+  B << 0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1;
+  Q.diagonal() << 10.0, 10.0, 10.0;
+  R.diagonal() << 0.001, 0.001, 0.001;
+  _xMax << OsqpEigen::INFTY, OsqpEigen::INFTY, OsqpEigen::INFTY;
+  _xMin << -OsqpEigen::INFTY, -OsqpEigen::INFTY, -OsqpEigen::INFTY;
+  _uMax << 1.0, 1.0, 1.0;
+  _uMin << -1.0, -1.0, -1.0;
+  x0 << 0, 0, 0;
 
   for (int i = 0; i < mpc_horizon + 1; i++) {
     double time = i * Ts;
-    xRef(0,i) = referenceTrajectory(time);
+    xRef(0, i) = 1;
+    xRef(1, i) = 1;
+    xRef(2, i) = 1;
   }
 
   mpc.set_dynamics_matrices(A, B);
@@ -67,7 +71,9 @@ int main() {
 
     for (int j = 0; j < mpc_horizon + 1; j++) {
       double time = currentTime + j * Ts;
-      xRef(0,j) = referenceTrajectory(time);
+      xRef(0, j) = 1;
+      xRef(1, j) = 1;
+      xRef(2, j) = 1;
     }
     mpc.set_reference(xRef);
     mpc.cast_mpc_to_qp_gradient();
@@ -75,7 +81,8 @@ int main() {
     Eigen::Matrix<double, input_dim, 1> control = mpc.step(x0, true);
 
     // Print results
-    std::cout << "Time: " << currentTime << " State: " << x0.transpose() << " Reference: " << referenceTrajectory(currentTime)
+    std::cout << "Time: " << currentTime << " State: " << x0.transpose()
+              << " Reference: " << xRef.col(0).transpose()
               << " Control: " << control.transpose() << std::endl;
 
     // Update state and constraints

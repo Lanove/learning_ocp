@@ -16,8 +16,8 @@ int main() {
   const int state_dim = 1;
   const int input_dim = 1;
 
-  Eigen::Matrix<double, state_dim, state_dim> Q;
-  Eigen::Matrix<double, input_dim, input_dim> R;
+  Eigen::DiagonalMatrix<double, state_dim, state_dim> Q;
+  Eigen::DiagonalMatrix<double, input_dim, input_dim> R;
 
   Eigen::Matrix<double, state_dim, 1> _xMax;
   Eigen::Matrix<double, state_dim, 1> _xMin;
@@ -35,8 +35,8 @@ int main() {
 
   A << 0.904837;
   B << 0.0951626;
-  Q << 10.0;
-  R << 0.001;
+  Q.diagonal() << 10.0;
+  R.diagonal() << 0.001;
   _xMax << OsqpEigen::INFTY;
   _xMin << -OsqpEigen::INFTY;
   _uMax << 10.0;
