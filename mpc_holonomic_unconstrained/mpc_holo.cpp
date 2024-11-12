@@ -49,9 +49,9 @@ int main() {
 
   for (int i = 0; i < mpc_horizon + 1; i++) {
     double time = i * Ts;
-    xRef(0, i) = 1;
-    xRef(1, i) = 0.1;
-    xRef(2, i) = 0;
+    xRef(0, i) = 10;
+    xRef(1, i) = 10;
+    xRef(2, i) = -2;
   }
 
   mpc.set_dynamics_matrices(A, B);
@@ -81,7 +81,8 @@ int main() {
     // mpc.set_reference(xRef_const);
     // mpc.cast_mpc_to_qp_gradient_const();
 
-    Eigen::Matrix<double, input_dim, 1> control = mpc.step(x0, true);
+    mpc.step(x0, true);
+    Eigen::VectorXd control = mpc.get_optimal_control();
 
     int width = 6; // Define the field width for each column
 

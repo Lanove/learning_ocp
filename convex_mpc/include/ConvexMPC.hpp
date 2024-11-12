@@ -53,8 +53,11 @@ public:
     x0 = initialState;
   }
 
-  Eigen::Matrix<double, InputDim, 1>
-  step(const Eigen::Matrix<double, StateDim, 1> &state, bool update_gradient) {
+  Eigen::VectorXd get_optimal_state() { return optimal_state; }
+  Eigen::VectorXd get_optimal_control() { return optimal_control; }
+
+  int step(const Eigen::Matrix<double, StateDim, 1> &state,
+           bool update_gradient) {
 
     x0 = state;
     update_constraint_vectors();
@@ -66,16 +69,15 @@ public:
     // Solve QP problem
     if (solver.solveProblem() != OsqpEigen::ErrorExitFlag::NoError) {
       std::cerr << "Solver failed!" << std::endl;
-      return Eigen::Matrix<double, InputDim, 1>::Zero();
+      return -1;
     }
 
     // Get control input
     Eigen::VectorXd QPSolution = solver.getSolution();
-    Eigen::Matrix<double, InputDim, 1> control =
-        QPSolution.block(StateDim * (mpc_horizon + 1), 0, InputDim, 1);
+    optimal_state = QPSolution.block(0, 0, StateDim * (mpc_horizon + 1), 1);
+    optimal_control = QPSolution.block(StateDim * (mpc_horizon + 1), 0, InputDim, 1);
 
-
-    return control;
+    return 0;
   }
 
   void cast_mpc_to_qp_hessian() {
@@ -130,9 +132,10 @@ public:
   }
 
   void cast_mpc_to_qp_constraint_matrix() {
-    constraintMatrix.resize(StateDim * (mpc_horizon + 1) + StateDim * (mpc_horizon + 1) +
-                                InputDim * mpc_horizon,
-                            StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon);
+    constraintMatrix.resize(
+        StateDim * (mpc_horizon + 1) + StateDim * (mpc_horizon + 1) +
+            InputDim * mpc_horizon,
+        StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon);
 
     // populate linear constraint matrix
     for (int i = 0; i < StateDim * (mpc_horizon + 1); i++) {
@@ -144,7 +147,8 @@ public:
         for (int k = 0; k < StateDim; k++) {
           float value = A(j, k);
           if (value != 0) {
-            constraintMatrix.insert(StateDim * (i + 1) + j, StateDim * i + k) = value;
+            constraintMatrix.insert(StateDim * (i + 1) + j, StateDim * i + k) =
+                value;
           }
         }
 
@@ -154,11 +158,13 @@ public:
           float value = B(j, k);
           if (value != 0) {
             constraintMatrix.insert(StateDim * (i + 1) + j,
-                                    InputDim * i + k + StateDim * (mpc_horizon + 1)) = value;
+                                    InputDim * i + k +
+                                        StateDim * (mpc_horizon + 1)) = value;
           }
         }
 
-    for (int i = 0; i < StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon; i++) {
+    for (int i = 0; i < StateDim * (mpc_horizon + 1) + InputDim * mpc_horizon;
+         i++) {
       constraintMatrix.insert(i + (mpc_horizon + 1) * StateDim, i) = 1;
     }
   }
@@ -232,6 +238,7 @@ private:
   Eigen::Matrix<double, StateDim, InputDim> B;
 
   // Constraints and weights
+  Eigen::VectorXd optimal_state, optimal_control;
   Eigen::Matrix<double, StateDim, 1> xMax, xMin;
   Eigen::Matrix<double, InputDim, 1> uMax, uMin;
 
@@ -244,7 +251,7 @@ private:
 
   // Update constraint vectors with the new state
   void update_constraint_vectors() {
-    for(int i = 0; i < StateDim; i++) {
+    for (int i = 0; i < StateDim; i++) {
       lowerBound(i) = -x0(i);
       upperBound(i) = -x0(i);
     }
